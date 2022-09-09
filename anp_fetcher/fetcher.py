@@ -50,14 +50,16 @@ def get_ckan_package_metadata(dataset_id: str) -> dict:
 
 
 def download_shpc_metadata():
-    dest_filepath = DEST_DATA_DIR / "shpc" / "metadata.json"
+    dest_filepath = DEST_DATA_DIR / "shpc" / "metadata.html"
     if dest_filepath.exists():
         return
     dest_filepath.parent.mkdir(parents=True, exist_ok=True)
-    dataset_id = "serie-historica-de-precos-de-combustiveis-por-revenda"
-    metadata = get_ckan_package_metadata(dataset_id)
-    with open(dest_filepath, "w", encoding="utf-8") as f:
-        json.dump(metadata, f)
+    url = datasets["shpc"]["index-page-url"]
+    fetch_file(url, dest_filepath)
+    return {
+        "filepath": dest_filepath,
+        "url": url,
+    }
 
 
 def download_shlp_metadata():
@@ -67,3 +69,7 @@ def download_shlp_metadata():
     dest_filepath.parent.mkdir(parents=True, exist_ok=True)
     url = datasets["shlp"]["index-page-url"]
     fetch_file(url, dest_filepath)
+    return {
+        "filepath": dest_filepath,
+        "url": url,
+    }
