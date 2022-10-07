@@ -1,81 +1,133 @@
-import re
-
-from .utils import clean_resource_name
-
-MONTHS = {
-    "janeiro": 1,
-    "fevereiro": 2,
-    "marco": 3,
-    "abril": 4,
-    "maio": 5,
-    "junho": 6,
-    "julho": 7,
-    "agosto": 8,
-    "setembro": 9,
-    "outubro": 10,
-    "novembro": 11,
-    "dezembro": 12,
-}
+BASE_URL = "https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/precos-revenda-e-de-distribuicao-combustiveis/shlp"
 
 datasets = {
-    # Série Histórica de Preços de Combustíveis
-    "shpc": {
-        "index-page-url": "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/serie-historica-de-precos-de-combustiveis",
-        "subsets": {
-            "glp p13": {
-                "name": "glp-p13",
-            },
-            "etanol + gasolina comum": {
-                "name": "etanol-gasolina-comum",
-            },
-            "oleo diesel s-500 e s-10 + gnv": {
-                "name": "oleo-diesel-s-500-s-10-gnv",
-            },
-            "glp": {
-                "name": "glp",
-            },
-            "combustiveis automotivos": {
-                "name": "combustiveis-automotivos",
-            },
-        },
-    },
     "shlp": {
-        "index-page-url": "https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/precos-revenda-e-de-distribuicao-combustiveis/serie-historica-do-levantamento-de-precos",
+        "resources": [
+            {
+                "url": BASE_URL + "/2001-2012/semanal-brasil-2004-a-2012.xlsx",
+                "name": "semanal-brasil-2004-a-2012.xlsx",
+                "frequency": "semanal",
+                "territorial_level": "brasil",
+            },
+            {
+                "url": BASE_URL + "/2001-2012/semanal-regioes-2004-a-2012.xlsx",
+                "name": "semanal-regioes-2004-a-2012.xlsx",
+                "frequency": "semanal",
+                "territorial_level": "grande-regiao",
+            },
+            {
+                "url": BASE_URL + "/2001-2012/semanal-estados-2004-a-2012.xlsx",
+                "name": "semanal-estados-2004-a-2012.xlsx",
+                "frequency": "semanal",
+                "territorial_level": "uf",
+            },
+            {
+                "url": BASE_URL + "/2001-2012/semanal-municipios-2004-a-2012.xlsb",
+                "name": "semanal-municipios-2004-a-2012.xlsb",
+                "frequency": "semanal",
+                "territorial_level": "brasil",
+            },
+            {
+                "url": BASE_URL + "/semanal/semanal-brasil-desde-2013-2.xlsx",
+                "name": "semanal-brasil-desde-2013-2.xlsx",
+                "frequency": "semanal",
+                "territorial_level": "brasil",
+            },
+            {
+                "url": BASE_URL + "/semanal/semanal-regioes-desde-2013.xlsx",
+                "name": "semanal-regioes-desde-2013.xlsx",
+                "frequency": "semanal",
+                "territorial_level": "grande-regiao",
+            },
+            {
+                "url": BASE_URL + "/semanal/semanal-estados-desde-2013-2.xlsx",
+                "name": "semanal-estados-desde-2013-2.xlsx",
+                "territorial_level": "uf",
+            },
+            {
+                "url": BASE_URL + "/semanal/semanal-municipios-2013-a-2017.xlsb",
+                "name": "semanal-municipios-2013-a-2017.xlsb",
+                "frequency": "semanal",
+                "territorial_level": "municipio",
+            },
+            {
+                "url": BASE_URL + "/semanal/semanal-municipios-2018-a-2021.xlsb",
+                "name": "semanal-municipios-2018-a-2021.xlsb",
+                "frequency": "semanal",
+                "territorial_level": "municipio",
+            },
+            {
+                "url": BASE_URL + "/semanal/semanal-municipios-2022.xlsx",
+                "name": "semanal-municipios-2022.xlsx",
+                "frequency": "semanal",
+                "territorial_level": "municipio",
+            },
+            {
+                "url": BASE_URL + "/2001-2012/mensal-brasil-2001-a-2012.xlsx",
+                "name": "mensal-brasil-2001-a-2012.xlsx",
+                "frequency": "mensal",
+                "territorial_level": "brasil",
+            },
+            {
+                "url": BASE_URL + "/2001-2012/mensal-regioes-2001-a-2012.xlsx",
+                "name": "mensal-regioes-2001-a-2012.xlsx",
+                "frequency": "mensal",
+                "territorial_level": "grande-regiao",
+            },
+            {
+                "url": BASE_URL + "/2001-2012/mensal-estados-2001-a-2012.xlsx",
+                "name": "mensal-estados-2001-a-2012.xlsx",
+                "frequency": "mensal",
+                "territorial_level": "uf",
+            },
+            {
+                "url": BASE_URL + "/2001-2012/mensal-municipios-2001-a-2012.xlsb",
+                "name": "mensal-municipios-2001-a-2012.xlsb",
+                "frequency": "mensal",
+                "territorial_level": "municipio",
+            },
+            {
+                "url": BASE_URL + "/mensal/mensal-brasil-desde-jan2013.xlsx",
+                "name": "mensal-brasil-desde-jan2013.xlsx",
+                "frequency": "mensal",
+                "territorial_level": "brasil",
+            },
+            {
+                "url": BASE_URL + "/mensal/mensal-regioes-desde-jan2013.xlsx",
+                "name": "mensal-regioes-desde-jan2013.xlsx",
+                "frequency": "mensal",
+                "territorial_level": "grande-regiao",
+            },
+            {
+                "url": BASE_URL + "/mensal/mensal-estados-desde-jan2013.xlsx",
+                "name": "mensal-estados-desde-jan2013.xlsx",
+                "frequency": "mensal",
+                "territorial_level": "uf",
+            },
+            {
+                "url": BASE_URL + "/mensal/mensal-municipios-2013-a-2015.xlsx",
+                "name": "mensal-municipios-2013-a-2015.xlsx",
+                "frequency": "mensal",
+                "territorial_level": "municipio",
+            },
+            {
+                "url": BASE_URL + "/mensal/mensal-municipios-2016-a-2018.xlsx",
+                "name": "mensal-municipios-2016-a-2018.xlsx",
+                "frequency": "mensal",
+                "territorial_level": "municipio",
+            },
+            {
+                "url": BASE_URL + "/mensal/mensal-municipios-2019-a-2021.xlsx",
+                "name": "mensal-municipios-2019-a-2021.xlsx",
+                "frequency": "mensal",
+                "territorial_level": "municipio",
+            },
+            {
+                "url": BASE_URL + "/mensal/mensal-municipios-desde-jan2022.xlsx",
+                "name": "mensal-municipios-desde-jan2022.xlsx",
+                "frequency": "mensal",
+                "territorial_level": "municipio",
+            }
+        ],
     },
 }
-
-
-def parse_shpc_metadata(shpc_metadata):
-    subsets_shpc = datasets["shpc"]["subsets"]
-    months = "|".join(MONTHS.keys())
-    for resource in shpc_metadata["result"]["resources"]:
-        url = resource["url"]
-        name = clean_resource_name(resource["name"])
-        extension = resource["format"].lower()
-        if extension == "csv":
-            info = {
-                "url": url,
-                "extension": extension,
-                "resource-name": name,
-            }
-            if m := re.match(r"([12])o(|\.) sem (\d{4}) - ([\w ]+)", name):
-                semester, _, year, subset_name = m.groups()
-                info.update(
-                    {
-                        "subset": subsets_shpc[subset_name]["name"],
-                        "subset-name": subset_name,
-                        "date": (int(year), int(semester)),
-                        "frequency": "semester",
-                    },
-                )
-            elif m := re.match(r"(.+) - (" + months + r")/(\d{4})", name):
-                subset_name, month, year = m.groups()
-                info.update(
-                    {
-                        "subset": subsets_shpc[subset_name]["name"],
-                        "subset-name": subset_name,
-                        "date": (int(year), MONTHS[month]),
-                        "frequency": "month",
-                    },
-                )
-            yield info

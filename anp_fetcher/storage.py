@@ -11,6 +11,16 @@ def get_shpc_filepath(dest_data_dir: Path, info: dict) -> Path:
     return dest_filepath
 
 
+def get_shlp_filepath(dest_data_dir: Path, info: dict) -> Path:
+    frequency = info["frequency"]
+    region = info["region"]
+    period = info["period"]
+    extension = info["extension"]
+    dest_filename = f"{region}-{frequency}-{period}.{extension}"
+    dest_filepath = dest_data_dir / "shlp" / f"{region}-{frequency}" / dest_filename
+    return dest_filepath
+
+
 def write_data(data: bytes, filepath: Path):
     filepath.parent.mkdir(parents=True, exist_ok=True)
     with filepath.open("wb") as f:

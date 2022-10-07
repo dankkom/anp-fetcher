@@ -1,10 +1,8 @@
-import json
 from pathlib import Path
 
 import httpx
 from tqdm import tqdm
 
-from .config import CKAN_PACKAGE_SHOW_FMT, DEST_DATA_DIR
 from .metadata import datasets
 
 
@@ -22,6 +20,7 @@ def fetch_file(url: str, dest_filepath: Path) -> bytes:
             with httpx.stream(**args) as r:
                 if "Content-Length" not in r.headers:
                     raise Exception("No Content-Length")
+                print(r.headers)
                 total = int(r.headers["Content-Length"])
                 progress = tqdm(
                     total=total,
@@ -42,34 +41,48 @@ def fetch_file(url: str, dest_filepath: Path) -> bytes:
             break
 
 
-def get_ckan_package_metadata(dataset_id: str) -> dict:
-    url = CKAN_PACKAGE_SHOW_FMT.format(dataset_id=dataset_id)
-    r = httpx.get(url)
-    metadata = r.json()
-    return metadata
-
-
-def download_shpc_metadata():
-    dest_filepath = DEST_DATA_DIR / "shpc" / "metadata.html"
-    if dest_filepath.exists():
-        return
-    dest_filepath.parent.mkdir(parents=True, exist_ok=True)
-    url = datasets["shpc"]["index-page-url"]
+def fetch_shpc_dsas_ca(year, month, dest_filepath):
+    url = (
+        "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos"
+        "/arquivos/shpc/dsas/ca/ca-{year}-{semester:02}.csv"
+    ).format(year=year, month=month)
     fetch_file(url, dest_filepath)
-    return {
-        "filepath": dest_filepath,
-        "url": url,
-    }
 
 
-def download_shlp_metadata():
-    dest_filepath = DEST_DATA_DIR / "shlp" / "metadata.html"
-    if dest_filepath.exists():
-        return
-    dest_filepath.parent.mkdir(parents=True, exist_ok=True)
-    url = datasets["shlp"]["index-page-url"]
+def fetch_shpc_dsas_glp(year, month, dest_filepath):
+    url = (
+        "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos"
+        "/arquivos/shpc/dsas/glp/glp-{year}-{semester:02}.csv"
+    ).format(year=year, month=month)
     fetch_file(url, dest_filepath)
-    return {
-        "filepath": dest_filepath,
-        "url": url,
-    }
+
+
+def fetch_shpc_dsan_precos_diesel_gnv(year, month, dest_filepath):
+    url = (
+        "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos"
+        "/arquivos/shpc/dsan/{year}/precos-diesel-gnv-{month:02}.csv"
+    ).format(year=year, month=month)
+    fetch_file(url, dest_filepath)
+
+
+def fetch_shpc_dsan_gasolina_etanol(year, month, dest_filepath):
+    url = (
+        "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos"
+        "/arquivos/shpc/dsan/{year}/{year}-{month:02}-gasolina-etanol.csv"
+    ).format(year=year, month=month)
+    fetch_file(url, dest_filepath)
+
+
+def fetch_shpc_dsan_precos_glp(year, month, dest_filepath):
+    url = (
+        "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos"
+        "/arquivos/shpc/dsan/{year}/precos-glp-{month:02}.csv"
+    ).format(year=year, month=month)
+    fetch_file(url, dest_filepath)
+
+
+def fetch_shlp(dest_dir):
+    for resource in datasets["shlp"]["resources"]:
+        url = resource["url"]
+        dest_filepath = dest_dir / resource["name"]
+        fetch_file(url, dest_filepath)
