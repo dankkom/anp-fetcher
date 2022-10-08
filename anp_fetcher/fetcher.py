@@ -1,9 +1,12 @@
 from pathlib import Path
+import re
 
 import httpx
 from tqdm import tqdm
 
 from .metadata import datasets
+from .config import CKAN_PACKAGE_SHOW_FMT
+from . import utils
 
 
 def fetch_file(url: str, dest_filepath: Path) -> bytes:
@@ -20,7 +23,6 @@ def fetch_file(url: str, dest_filepath: Path) -> bytes:
             with httpx.stream(**args) as r:
                 if "Content-Length" not in r.headers:
                     raise Exception("No Content-Length")
-                print(r.headers)
                 total = int(r.headers["Content-Length"])
                 progress = tqdm(
                     total=total,
@@ -41,47 +43,50 @@ def fetch_file(url: str, dest_filepath: Path) -> bytes:
             break
 
 
-def fetch_shpc_dsas_ca(year, month, dest_filepath):
-    url = (
-        "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos"
-        "/arquivos/shpc/dsas/ca/ca-{year}-{semester:02}.csv"
-    ).format(year=year, month=month)
-    fetch_file(url, dest_filepath)
+def fetch_shpc(dest_dir: Path):
+    dataset_id = "serie-historica-de-precos-de-combustiveis-por-revenda"
+    url = CKAN_PACKAGE_SHOW_FMT.format(dataset_id=dataset_id)
+    r = httpx.get(url)
+    metadata = r.json()
+    resources = metadata["result"]["resources"]
+    for resource in resources:
+        name = resource["name"]
+        if name.startswith("GLP P13"):
+            dataset = "glp-p13"
+            m = re.match(r"^GLP P13 \- (\w+\/\d{4})$", name)
+            monthyear, = m.groups()
+            period = utils.decode_monthyear(monthyear)
+        elif name.startswith("Etanol + Gasolina Comum"):
+            dataset = "etanol-gasolina-comum"
+            m = re.match(r"^Etanol \+ Gasolina Comum \- (\w+\/\d{4})$", name)
+            monthyear, = m.groups()
+            period = utils.decode_monthyear(monthyear)
+        elif name.startswith("Óleo Diesel S-500 e S-10 + GNV"):
+            dataset = "oleo-diesel-gnv"
+            m = re.match(r"^Óleo Diesel S\-500 e S\-10 \+ GNV \- (\w+\/\d{4})$", name)
+            monthyear, = m.groups()
+            period = utils.decode_monthyear(monthyear)
+        elif name.endswith("GLP"):
+            dataset = "glp"
+            m = re.match(r"^([12]o(\.|) Sem (\d{4})) - GLP$", name)
+            semesteryear, *_ = m.groups()
+            period = utils.decode_semesteryear(semesteryear)
+        elif name.endswith("Combustíveis Automotivos"):
+            dataset = "combustiveis-automotivos"
+            m = re.match(r"^([12]o(\.|) Sem (\d{4})) - Combustíveis Automotivos$", name)
+            semesteryear, *_ = m.groups()
+            period = utils.decode_semesteryear(semesteryear)
+        else:
+            continue
+        url = resource["url"]
+        filename = url.rsplit("/", maxsplit=1)[1]
+        dest_filepath = dest_dir / dataset / filename
+        if dest_filepath.exists():
+            continue
+        fetch_file(url, dest_filepath)
 
 
-def fetch_shpc_dsas_glp(year, month, dest_filepath):
-    url = (
-        "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos"
-        "/arquivos/shpc/dsas/glp/glp-{year}-{semester:02}.csv"
-    ).format(year=year, month=month)
-    fetch_file(url, dest_filepath)
-
-
-def fetch_shpc_dsan_precos_diesel_gnv(year, month, dest_filepath):
-    url = (
-        "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos"
-        "/arquivos/shpc/dsan/{year}/precos-diesel-gnv-{month:02}.csv"
-    ).format(year=year, month=month)
-    fetch_file(url, dest_filepath)
-
-
-def fetch_shpc_dsan_gasolina_etanol(year, month, dest_filepath):
-    url = (
-        "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos"
-        "/arquivos/shpc/dsan/{year}/{year}-{month:02}-gasolina-etanol.csv"
-    ).format(year=year, month=month)
-    fetch_file(url, dest_filepath)
-
-
-def fetch_shpc_dsan_precos_glp(year, month, dest_filepath):
-    url = (
-        "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos"
-        "/arquivos/shpc/dsan/{year}/precos-glp-{month:02}.csv"
-    ).format(year=year, month=month)
-    fetch_file(url, dest_filepath)
-
-
-def fetch_shlp(dest_dir):
+def fetch_shlp(dest_dir: Path):
     for resource in datasets["shlp"]["resources"]:
         url = resource["url"]
         dest_filepath = dest_dir / resource["name"]
