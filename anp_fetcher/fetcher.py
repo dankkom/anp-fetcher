@@ -93,6 +93,8 @@ def fetch_shlp(dest_dir: Path):
     for resource in datasets["shlp"]["resources"]:
         url = resource["url"]
         dest_filepath = dest_dir / resource["name"]
+        if dest_filepath.exists():
+            continue
         fetch_file(url, dest_filepath)
         yield {
             "filepath": dest_filepath,
