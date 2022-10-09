@@ -84,6 +84,9 @@ def fetch_shpc(dest_dir: Path):
         if dest_filepath.exists():
             continue
         fetch_file(url, dest_filepath)
+        yield {
+            "filepath": dest_filepath,
+        }
 
 
 def fetch_shlp(dest_dir: Path):
@@ -91,3 +94,6 @@ def fetch_shlp(dest_dir: Path):
         url = resource["url"]
         dest_filepath = dest_dir / resource["name"]
         fetch_file(url, dest_filepath)
+        yield {
+            "filepath": dest_filepath,
+        }

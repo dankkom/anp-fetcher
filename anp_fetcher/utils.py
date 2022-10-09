@@ -1,7 +1,6 @@
 import datetime as dt
 import re
 import unicodedata
-from pprint import pprint
 
 months = {
     "janeiro": 1,
