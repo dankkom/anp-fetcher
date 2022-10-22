@@ -1,3 +1,4 @@
+import datetime as dt
 from pathlib import Path
 import re
 
@@ -50,7 +51,9 @@ def fetch_shpc(dest_dir: Path):
     metadata = r.json()
     resources = metadata["result"]["resources"]
     for resource in resources:
+
         name = resource["name"]
+
         if name.startswith("GLP P13"):
             dataset = "glp-p13"
             m = re.match(r"^GLP P13 \- (\w+\/\d{4})$", name)
@@ -78,8 +81,23 @@ def fetch_shpc(dest_dir: Path):
             period = utils.decode_semesteryear(semesteryear)
         else:
             continue
+
         url = resource["url"]
-        filename = url.rsplit("/", maxsplit=1)[1]
+
+        last_modified = resource["last_modified"]
+        if last_modified is not None:
+            last_modified = dt.datetime.strptime(
+                last_modified,
+                "%Y-%m-%dT%H:%M:%S.%f",
+            )
+        else:
+            last_modified = dt.datetime.strptime(
+                resource["created"],
+                "%Y-%m-%dT%H:%M:%S.%f",
+            )
+
+        file = Path(url.rsplit("/", maxsplit=1)[1])
+        filename = f"{dataset}_{period:%Y%m}_{last_modified:%Y%m%d%H%M}{file.suffix}"
         dest_filepath = dest_dir / dataset / filename
         if dest_filepath.exists():
             continue
@@ -92,7 +110,7 @@ def fetch_shpc(dest_dir: Path):
 def fetch_shlp(dest_dir: Path):
     for resource in datasets["shlp"]["resources"]:
         url = resource["url"]
-        dest_filepath = dest_dir / resource["name"]
+        dest_filepath = dest_dir / "shlp" / resource["name"]
         if dest_filepath.exists():
             continue
         fetch_file(url, dest_filepath)
