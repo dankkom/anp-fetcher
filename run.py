@@ -13,6 +13,7 @@ def main():
         pass
     for file in fetcher.fetch_shpc(dest_dir):
         pass
+    fetcher.dados_estatisticos(dest_dir)
 
 
 if __name__ == "__main__":

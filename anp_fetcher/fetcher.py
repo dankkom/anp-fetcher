@@ -1,13 +1,14 @@
 import datetime as dt
-from pathlib import Path
 import re
+from pathlib import Path
 
 import httpx
+from bs4 import BeautifulSoup
 from tqdm import tqdm
 
-from .metadata import datasets
-from .config import CKAN_PACKAGE_SHOW_FMT
 from . import utils
+from .config import CKAN_PACKAGE_SHOW_FMT
+from .metadata import datasets
 
 
 def fetch_file(url: str, dest_filepath: Path) -> bytes:
@@ -38,7 +39,7 @@ def fetch_file(url: str, dest_filepath: Path) -> bytes:
                 break
         except httpx.ProtocolError as e:
             print("\nProtocol error", e)
-        except httpx.ConnectTimeout as e:
+        except (httpx.ConnectTimeout, httpx.ConnectError) as e:
             print("\nConnection timeout", e)
             dest_filepath.unlink(missing_ok=True)
             break
@@ -117,3 +118,30 @@ def fetch_shlp(dest_dir: Path):
         yield {
             "filepath": dest_filepath,
         }
+
+
+def dados_estatisticos(dest_dir: Path):
+    html_page_url = "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-estatisticos"
+    r = httpx.get(html_page_url)
+    soup = BeautifulSoup(r.text, "html.parser")
+
+    def is_file(href: str) -> bool:
+        m = re.match(r".*\.(pdf|xls|xlsx|zip)$", href)
+        return bool(m)
+
+    links = [
+        {
+            "href": a["href"],
+            "text": a.text.strip(),
+            "filename": a["href"].rsplit("/", 1)[1],
+        }
+        for a in soup.select("a") if is_file(a["href"])
+    ]
+
+    for link in links:
+        url = link["href"]
+        dest_filepath = dest_dir / "dados-estatisticos" / link["filename"]
+        if dest_filepath.exists():
+            continue
+        print(link)
+        fetch_file(url, dest_filepath)
