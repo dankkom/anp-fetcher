@@ -1,13 +1,15 @@
 from pathlib import Path
 
 
-def get_shpc_filepath(dest_data_dir: Path, info: dict) -> Path:
-    subset = info["subset"]
-    year, subyear = info["date"]
-    partition = f"{year:04}{subyear:02}"
-    extension = info["extension"]
-    dest_filename = f"{subset}_{partition}.{extension}"
-    dest_filepath = dest_data_dir / "shpc" / subset / dest_filename
+def get_shpc_filepath(data_dir: Path, dataset_info: dict) -> Path:
+    dataset = dataset_info["dataset"]
+    if subset := dataset_info["subset"]:
+        dataset += "-" + subset
+    year, subyear = dataset_info["date"]
+    date_partition = f"{year:04}{subyear:02}"
+    extension = dataset_info["file_extension"]
+    dest_filename = f"{dataset}_{date_partition}.{extension}"
+    dest_filepath = data_dir / "shpc" / dataset / dest_filename
     return dest_filepath
 
 

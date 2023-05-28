@@ -1,16 +1,23 @@
-[tool.poetry]
+[project]
 name = "anp-fetcher"
 version = "0.1.0"
 description = ""
-authors = ["Daniel Komesu <danielkomesu@gmail.com>"]
+authors = [
+    {name = "Daniel Komesu", email = "danielkomesu@gmail.com"},
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10"
-httpx = "^0.23.0"
-tqdm = "^4.64.1"
-beautifulsoup4 = "^4.11.1"
-lxml = "^4.9.1"
+requires-python = ">=3.10"
+
+dependencies = [
+    "beautifulsoup4",
+    "lxml",
+    "httpx",
+    "tqdm",
+]
+
+[tool.black]
+line-length = 79
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

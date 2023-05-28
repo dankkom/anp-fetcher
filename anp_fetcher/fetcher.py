@@ -1,4 +1,3 @@
-import datetime as dt
 import re
 from pathlib import Path
 
@@ -6,9 +5,9 @@ import httpx
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
-from . import utils
-from .config import CKAN_PACKAGE_SHOW_FMT
-from .metadata import datasets
+from . import metadata
+from .metadata_gather import gather_shpc_resources_metadata
+from .storage import get_shpc_filepath
 
 
 def fetch_file(url: str, dest_filepath: Path) -> bytes:
@@ -30,8 +29,9 @@ def fetch_file(url: str, dest_filepath: Path) -> bytes:
                     total=total,
                     unit="B",
                     unit_scale=True,
+                    desc=dest_filepath.name,
                 )
-                with dest_filepath.open("ab") as f:
+                with dest_filepath.open("wb") as f:
                     for chunk in r.iter_bytes():
                         f.write(chunk)
                         progress.update(len(chunk))
@@ -45,71 +45,8 @@ def fetch_file(url: str, dest_filepath: Path) -> bytes:
             break
 
 
-def fetch_shpc(dest_dir: Path):
-    dataset_id = "serie-historica-de-precos-de-combustiveis-por-revenda"
-    url = CKAN_PACKAGE_SHOW_FMT.format(dataset_id=dataset_id)
-    r = httpx.get(url)
-    metadata = r.json()
-    resources = metadata["result"]["resources"]
-    for resource in resources:
-
-        name = resource["name"]
-
-        if name.startswith("GLP P13"):
-            dataset = "glp-p13"
-            m = re.match(r"^GLP P13 \- (\w+\/\d{4})$", name)
-            monthyear, = m.groups()
-            period = utils.decode_monthyear(monthyear)
-        elif name.startswith("Etanol + Gasolina Comum"):
-            dataset = "etanol-gasolina-comum"
-            m = re.match(r"^Etanol \+ Gasolina Comum \- (\w+\/\d{4})$", name)
-            monthyear, = m.groups()
-            period = utils.decode_monthyear(monthyear)
-        elif name.startswith("Óleo Diesel S-500 e S-10 + GNV"):
-            dataset = "oleo-diesel-gnv"
-            m = re.match(r"^Óleo Diesel S\-500 e S\-10 \+ GNV \- (\w+\/\d{4})$", name)
-            monthyear, = m.groups()
-            period = utils.decode_monthyear(monthyear)
-        elif name.endswith("GLP"):
-            dataset = "glp"
-            m = re.match(r"^([12]o(\.|) Sem (\d{4})) - GLP$", name)
-            semesteryear, *_ = m.groups()
-            period = utils.decode_semesteryear(semesteryear)
-        elif name.endswith("Combustíveis Automotivos"):
-            dataset = "combustiveis-automotivos"
-            m = re.match(r"^([12]o(\.|) Sem (\d{4})) - Combustíveis Automotivos$", name)
-            semesteryear, *_ = m.groups()
-            period = utils.decode_semesteryear(semesteryear)
-        else:
-            continue
-
-        url = resource["url"]
-
-        last_modified = resource["last_modified"]
-        if last_modified is not None:
-            last_modified = dt.datetime.strptime(
-                last_modified,
-                "%Y-%m-%dT%H:%M:%S.%f",
-            )
-        else:
-            last_modified = dt.datetime.strptime(
-                resource["created"],
-                "%Y-%m-%dT%H:%M:%S.%f",
-            )
-
-        file = Path(url.rsplit("/", maxsplit=1)[1])
-        filename = f"{dataset}_{period:%Y%m}_{last_modified:%Y%m%d%H%M}{file.suffix}"
-        dest_filepath = dest_dir / dataset / filename
-        if dest_filepath.exists():
-            continue
-        fetch_file(url, dest_filepath)
-        yield {
-            "filepath": dest_filepath,
-        }
-
-
 def fetch_shlp(dest_dir: Path):
-    for resource in datasets["shlp"]["resources"]:
+    for resource in metadata.shlp:
         url = resource["url"]
         dest_filepath = dest_dir / "shlp" / resource["name"]
         if dest_filepath.exists():
@@ -120,8 +57,29 @@ def fetch_shlp(dest_dir: Path):
         }
 
 
+def fetch_shpc(data_dir: Path) -> dict:
+    shpc_resources = gather_shpc_resources_metadata()
+    for resource in shpc_resources["datasets"]:
+        url = resource["url"]
+        dest_filepath = get_shpc_filepath(data_dir, resource)
+        if dest_filepath.exists() and not resource["dynamic"]:
+            continue
+        fetch_file(url, dest_filepath)
+        yield resource | {"dest_filepath": dest_filepath}
+
+
+def fetch_shpc_doc(data_dir: Path):
+    shpc_resources = gather_shpc_resources_metadata()
+    url = shpc_resources["doc"]["url"]
+    filename = shpc_resources["doc"]["filename"]
+    dest_filepath = data_dir / "shpc" / "[doc]" / filename
+    fetch_file(url, dest_filepath)
+
+
 def dados_estatisticos(dest_dir: Path):
-    html_page_url = "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-estatisticos"
+    html_page_url = (
+        "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-estatisticos"
+    )
     r = httpx.get(html_page_url)
     soup = BeautifulSoup(r.text, "html.parser")
 
