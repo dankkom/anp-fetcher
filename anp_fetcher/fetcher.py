@@ -61,8 +61,9 @@ def fetch_shpc(data_dir: Path) -> dict:
     shpc_resources = gather_shpc_resources_metadata()
     for resource in shpc_resources["datasets"]:
         url = resource["url"]
+
         dest_filepath = get_shpc_filepath(data_dir, resource)
-        if dest_filepath.exists() and not resource["dynamic"]:
+        if dest_filepath.exists():
             continue
         fetch_file(url, dest_filepath)
         yield resource | {"dest_filepath": dest_filepath}
