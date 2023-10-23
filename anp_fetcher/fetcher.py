@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+from typing import Any
 
 import httpx
 from bs4 import BeautifulSoup
@@ -45,28 +46,24 @@ def fetch_file(url: str, dest_filepath: Path) -> bytes:
             break
 
 
-def fetch_shlp(dest_dir: Path):
-    for resource in metadata.shlp:
-        url = resource["url"]
-        dest_filepath = dest_dir / "shlp" / resource["name"]
-        if dest_filepath.exists():
-            continue
-        fetch_file(url, dest_filepath)
-        yield {
-            "filepath": dest_filepath,
-        }
+def fetch_shlp(resource: dict[str, Any], dest_dir: Path):
+    url = resource["url"]
+    dest_filepath = dest_dir / "shlp" / resource["name"]
+    if dest_filepath.exists():
+        return {"filepath": dest_filepath}
+    fetch_file(url, dest_filepath)
+    return {
+        "filepath": dest_filepath,
+    }
 
 
-def fetch_shpc(data_dir: Path) -> dict:
-    shpc_resources = gather_shpc_resources_metadata()
-    for resource in shpc_resources["datasets"]:
-        url = resource["url"]
-
-        dest_filepath = get_shpc_filepath(data_dir, resource)
-        if dest_filepath.exists():
-            continue
-        fetch_file(url, dest_filepath)
-        yield resource | {"dest_filepath": dest_filepath}
+def fetch_shpc(resource: dict[str, Any], data_dir: Path) -> dict:
+    url = resource["url"]
+    dest_filepath = get_shpc_filepath(data_dir, resource)
+    if dest_filepath.exists():
+        return resource | {"dest_filepath": dest_filepath}
+    fetch_file(url, dest_filepath)
+    return resource | {"dest_filepath": dest_filepath}
 
 
 def fetch_shpc_doc(data_dir: Path):
