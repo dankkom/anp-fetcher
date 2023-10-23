@@ -1,13 +1,10 @@
-import re
 from pathlib import Path
 from typing import Any
 
 import httpx
-from bs4 import BeautifulSoup
 from tqdm import tqdm
 
-from . import metadata
-from .metadata_gather import gather_shpc_resources_metadata
+from .metadata_gather import gather_dados_estatisticos_metadata, gather_shpc_resources_metadata
 from .storage import get_shpc_filepath
 
 
@@ -75,25 +72,7 @@ def fetch_shpc_doc(data_dir: Path):
 
 
 def dados_estatisticos(dest_dir: Path):
-    html_page_url = (
-        "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-estatisticos"
-    )
-    r = httpx.get(html_page_url)
-    soup = BeautifulSoup(r.text, "html.parser")
-
-    def is_file(href: str) -> bool:
-        m = re.match(r".*\.(pdf|xls|xlsx|zip)$", href)
-        return bool(m)
-
-    links = [
-        {
-            "href": a["href"],
-            "text": a.text.strip(),
-            "filename": a["href"].rsplit("/", 1)[1],
-        }
-        for a in soup.select("a") if is_file(a["href"])
-    ]
-
+    links = gather_dados_estatisticos_metadata()
     for link in links:
         url = link["href"]
         dest_filepath = dest_dir / "dados-estatisticos" / link["filename"]

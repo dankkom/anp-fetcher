@@ -188,3 +188,26 @@ def gather_shpc_resources_metadata() -> dict[str, str | list[dict[str, Any]]]:
             + ultimas_4_semanas
         ),
     }
+
+
+def gather_dados_estatisticos_metadata() -> list[dict[str, Any]]:
+    html_page_url = (
+        "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-estatisticos"
+    )
+    r = httpx.get(html_page_url)
+    soup = BeautifulSoup(r.text, "html.parser")
+
+    def is_file(href: str) -> bool:
+        m = re.match(r".*\.(pdf|xls|xlsx|zip)$", href)
+        return bool(m)
+
+    links = [
+        {
+            "href": a["href"],
+            "text": a.text.strip(),
+            "filename": a["href"].rsplit("/", 1)[1],
+        }
+        for a in soup.select("a") if is_file(a["href"])
+    ]
+
+    return links
